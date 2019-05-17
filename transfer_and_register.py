@@ -19,12 +19,10 @@ description = "Script to transfer and register data to GridPP"
 # Wrote script to use command line arguments but dirac breaks without including
 # it's own command line parser. Rather than rewrite, this is a hack.
 class arguments:
-    source = "gsiftp://dtn01.nersc.gov/global/projecta/projectdirs/lsst/"+\
-        "groups/CS/cosmoDC2/cosmoDC2_v1.1.4_rs_scatter_query_tree_double/"
-    dest = "gsiftp://gfe02.grid.hep.ph.ic.ac.uk/pnfs/hep.ph.ic.ac.uk/data"+\
-        "/lsst/lsst/cosmoDC2/cosmoDC2_v1.1.4_rs_scatter_query_tree_double/"
+    source = "gsiftp://dtn01.nersc.gov/global/projecta/projectdirs/lsst/groups/CS/cosmoDC2/cosmoDC2_v1.1.4_rs_scatter_query_tree_double/"
+    dest = "gsiftp://gfe02.grid.hep.ph.ic.ac.uk/pnfs/hep.ph.ic.ac.uk/data/lsst//lsst/cosmoDC2/cosmoDC2_v1.1.4_rs_scatter_query_tree_double/"
     se = "UKI-LT2-IC-HEP-disk"
-    lfnpath = "/lsst/cosmoDC2/cosmoDC2_v1.1.4_rs_scatter_query_tree_double/"
+    lfnpath = "/lsst/cosmoDC2/cosmoDC2_v1.1.4_rs_scatter_query_tree_double"
     transfer = False
     register = False
 
@@ -86,9 +84,8 @@ def register(fc, gf, filelist, se, lfnpath):
     File Catalogue
     """
 
-
     if not fc.isDirectory(lfnpath)["Value"]["Successful"][lfnpath]:
-        fcat.createDirectory(lfnpath)
+        fc.createDirectory(lfnpath)
         if not lfnpath.endswith("/"):
             lfnpath = lfnpath+"/"
 
