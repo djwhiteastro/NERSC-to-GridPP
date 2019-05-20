@@ -27,10 +27,12 @@ to communicate with both NERSC and GridPP, these may not be required.
 python transfer_and_register.py
 ```
 
-While working I found out that due to the way Dirac python bindings work, it is
+~~While working I found out that due to the way Dirac python bindings work, it is
 not possible to pass variables on the command line. For now, the only way to 
 alter how the script runs is to manually edit the values in the `arguments`
-class. 
+class.~~
+
+The script now accepts command line arguments to alter execution.
 
 The user can pass either a folder or file to the `source` argument, with only
 directories being passed to `dest` and `lfnpath` arguments. WARNING: This script
