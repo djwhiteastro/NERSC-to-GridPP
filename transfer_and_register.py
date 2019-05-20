@@ -10,54 +10,52 @@ import stat
 import uuid
 import gfal2
 from DIRAC.Resources.Catalog.FileCatalog import FileCatalog
-# DIRAC does not work otherwise
-from DIRAC.Core.Base import Script
-Script.parseCommandLine( ignoreErrors = True )
+
 
 description = "Script to transfer and register data to GridPP"
 
 # Wrote script to use command line arguments but dirac breaks without including
 # it's own command line parser. Rather than rewrite, this is a hack.
-class arguments:
-    source = "gsiftp://dtn01.nersc.gov/global/projecta/projectdirs/lsst/groups/CS/cosmoDC2/cosmoDC2_v1.1.4_rs_scatter_query_tree_double/"
-    dest = "gsiftp://gfe02.grid.hep.ph.ic.ac.uk/pnfs/hep.ph.ic.ac.uk/data/lsst//lsst/cosmoDC2/cosmoDC2_v1.1.4_rs_scatter_query_tree_double/"
-    se = "UKI-LT2-IC-HEP-disk"
-    lfnpath = "/lsst/cosmoDC2/cosmoDC2_v1.1.4_rs_scatter_query_tree_double"
-    transfer = False
-    register = False
+# class arguments:
+#     source = "gsiftp://dtn01.nersc.gov/global/projecta/projectdirs/lsst/groups/CS/cosmoDC2/cosmoDC2_v1.1.4_rs_scatter_query_tree_double/"
+#     dest = "gsiftp://gfe02.grid.hep.ph.ic.ac.uk/pnfs/hep.ph.ic.ac.uk/data/lsst//lsst/cosmoDC2/cosmoDC2_v1.1.4_rs_scatter_query_tree_double/"
+#     se = "UKI-LT2-IC-HEP-disk"
+#     lfnpath = "/lsst/cosmoDC2/cosmoDC2_v1.1.4_rs_scatter_query_tree_double"
+#     transfer = False
+#     register = False
 
-# def parse_command_line():
-#     """
-#     Parser of command line arguments for transfer_and_register.py
-#     """
+def parse_command_line():
+    """
+    Parser of command line arguments for transfer_and_register.py
+    """
     
-#     parser = argparse.ArgumentParser(
-#         description=description,
-#         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-#     parser.add_argument("-s", "--source", metavar='<source-url>',
-#         default="gsiftp://dtn01.nersc.gov/global/projecta/projectdirs/lsst/"+
-#         "groups/CS/cosmoDC2/cosmoDC2_v1.1.4_rs_scatter_query_tree_double/",
-#         help="Source (with protocol, e.g. srm://)")
+    parser.add_argument("-s", "--source", metavar='<source-url>',
+        default="gsiftp://dtn01.nersc.gov/global/projecta/projectdirs/lsst/"+
+        "groups/CS/cosmoDC2/cosmoDC2_v1.1.4_rs_scatter_query_tree_double/",
+        help="Source (with protocol, e.g. srm://)")
 
-#     parser.add_argument("-d", "--dest", metavar='<dest-url>',
-#         default="gsiftp://gfe02.grid.hep.ph.ic.ac.uk/pnfs/hep.ph.ic.ac.uk/data"+
-#         "/lsst/lsst/cosmoDC2/cosmoDC2_v1.1.4_rs_scatter_query_tree_double/",
-#         help="Destination (with protocol, e.g. gsiftp://) on GridPP system")
+    parser.add_argument("-d", "--dest", metavar='<dest-url>',
+        default="gsiftp://gfe02.grid.hep.ph.ic.ac.uk/pnfs/hep.ph.ic.ac.uk/data"+
+        "/lsst/lsst/cosmoDC2/cosmoDC2_v1.1.4_rs_scatter_query_tree_double/",
+        help="Destination (with protocol, e.g. gsiftp://) on GridPP system")
 
-#     parser.add_argument("-e", "--se", default="UKI-LT2-IC-HEP-disk",
-#         metavar='<storage-element>', help="Storage element to use on Dirac")
+    parser.add_argument("-e", "--se", default="UKI-LT2-IC-HEP-disk",
+        metavar='<storage-element>', help="Storage element to use on Dirac")
 
-#     parser.add_argument("-l", "--lfnpath", metavar='<LFN_PATH>',
-#         default="/lsst/cosmoDC2/cosmoDC2_v1.1.4_rs_scatter_query_tree_double/",
-#         help="LFN Path/folder to register files to (filename added by script)")
+    parser.add_argument("-l", "--lfnpath", metavar='<LFN_PATH>',
+        default="/lsst/cosmoDC2/cosmoDC2_v1.1.4_rs_scatter_query_tree_double/",
+        help="LFN Path/folder to register files to (filename added by script)")
 
-#     parser.add_argument("-t", "--transfer", action='store_true',
-#                         help="Transfer files")
-#     parser.add_argument("-r", "--register", action='store_true',
-#                         help="Register files")
+    parser.add_argument("-t", "--transfer", action='store_true',
+                        help="Transfer files")
+    parser.add_argument("-r", "--register", action='store_true',
+                        help="Register files")
 
-#     return parser.parse_args()
+    return parser.parse_args()
 
 
 def transfer(gf, filelist, dest):
@@ -184,8 +182,14 @@ def lfn_exists(fc, lfn):
         raise Exception(result)
 
 def main():
-    args = arguments()
-    
+    # args = arguments()
+
+    # Strip arguments so command below doesn't throw error
+    # DIRAC does not work otherwise
+    sys.argv = [sys.argv[0]] 
+    from DIRAC.Core.Base import Script
+    Script.parseCommandLine( ignoreErrors = True )
+
     if not args.dest.endswith("/") or not args.lfnpath.endswith("/"):
         raise Exception("Destination and/or LFN Path must be a directory "+
         "ending with a '/'")
@@ -216,4 +220,5 @@ def main():
 
 if __name__ == "__main__":
 
+    args = parse_command_line()
     main()
