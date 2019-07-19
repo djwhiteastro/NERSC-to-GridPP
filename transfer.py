@@ -31,34 +31,37 @@ def parse_command_line():
         "/lsst/lsst/cosmoDC2/cosmoDC2_v1.1.4_rs_scatter_query_tree_double/",
         help="Destination (with protocol, e.g. gsiftp://) on GridPP system")
 
-    parser.add_argument("-e", "--se", default="UKI-LT2-IC-HEP-disk",
-        metavar='<storage-element>', help="Storage element to use on Dirac")
-
-    parser.add_argument("-l", "--lfnpath", metavar='<LFN_PATH>',
-        default="/lsst/cosmoDC2/cosmoDC2_v1.1.4_rs_scatter_query_tree_double/",
-        help="LFN Path/folder to register files to (filename added by script)")
+    parser.add_argument("-o", "--output", metavar='<out_file>',
+        default="transferred.txt", 
+        help="File to store list of transferred files")
 
     return parser.parse_args()
 
 
 
-def transfer(gf, filelist, dest):
+def transfer(gf, filelist, dest, outfile):
     """
     Transfers each file in a list to a destination directory
     """
-    newfiles = []
-    for file in filelist:
-        info = gf.stat(file)
-        if not stat.S_ISDIR(info.st_mode):
-            _, fname = os.path.split(file) # Filecopy needs to know end filename
-            dest_file = dest+fname
-            if not dest_file_exists(gf, file, dest_file):
-                params = gf.TransferParameters()
-                params.overwrite = True #Need to overwrite for checksum diff
-                print("Transferring {} to {}".format(file, dest))
-                gf.filecopy(params, file, dest_file)
-                newfiles.append(dest_file)
-    return newfiles
+    with open(outfile, 'a') as out:
+        for file in filelist:
+            info = gf.stat(file)
+            size = info.st_size
+            chksum = gf.checksum(file, 'ADLER32')
+
+            params = gf.TransferParameters()
+            params.overwrite = True # Need to overwrite for checksum diff
+            params.checksum_check = True
+
+            if not stat.S_ISDIR(info.st_mode): # Ignore directories
+                _, fname = os.path.split(file)  # Filecopy needs to know end
+                                                # filename
+                dest_file = dest+fname
+                if not dest_file_exists(gf, chksum, dest_file):
+                    print("Transferring {} to {}".format(file, dest))
+                    gf.filecopy(params, file, dest_file)
+                    out.write("{0} {1} {2}\n".format(dest_file, size, chksum))
+
 
 def list_files(gf, path):
     """
@@ -89,12 +92,12 @@ def is_dir(gf, path):
             return False
         else:
             raise Exception("An error was thrown that wasn't expected when "+
-                "checking if path is a directory")
+                "checking if path is a directory: {}".format(msg))
     else:
         return True
 
 
-def dest_file_exists(gf, s_file, dest_file):
+def dest_file_exists(gf, s_chksum, dest_file):
     """
     Check if the file to transfer already exists at the destination
     Uses checksum to verify that an existing file is the same, overwrites if not
@@ -110,14 +113,17 @@ def dest_file_exists(gf, s_file, dest_file):
             raise e
     else:
         # If file exists, check to make sure it is the same file
-        source_chksum = gf.checksum(s_file, 'ADLER32')
-        if source_chksum == dest_chksum: # If yes, don't transfer
+        if s_chksum == dest_chksum: # If yes, don't transfer
             return True
         else: # If not, okay to transfer and overwrite
             return False
 
 
-def main():
+def main(args):
+
+    if not args.dest.endswith("/") :
+        raise Exception("Destination Path must be a directory "+
+        "ending with a '/'")
 
     gfal = gfal2.creat_context()
 
@@ -128,9 +134,9 @@ def main():
         files = [args.source]
 
     gfal.mkdir_rec(args.dest, 0755)
-    transfer(gfal, files, args.dest)
+    transfer(gfal, files, args.dest, args.output)
 
 if __name__ == "__main__":
 
-    args = parse_command_line()
-    main()
+    arguments = parse_command_line()
+    main(arguments)

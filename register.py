@@ -7,7 +7,7 @@ import sys
 import argparse
 import stat
 import uuid
-from DIRAC.Resources.Catalog.FileCatalog import FileCatalog
+from DIRAC.Resources.Catalog.FileCatalogClient import FileCatalogClient
 
 description = "Script to register data to GridPP that exist on storage"
 
@@ -21,15 +21,9 @@ def parse_command_line():
         description=description,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument("-s", "--source", metavar='<source-url>',
-        default="gsiftp://dtn01.nersc.gov/global/projecta/projectdirs/lsst/"+
-        "groups/CS/cosmoDC2/cosmoDC2_v1.1.4_rs_scatter_query_tree_double/",
-        help="Source (with protocol, e.g. srm://)")
-
-    parser.add_argument("-d", "--dest", metavar='<dest-url>',
-        default="gsiftp://gfe02.grid.hep.ph.ic.ac.uk/pnfs/hep.ph.ic.ac.uk/data"+
-        "/lsst/lsst/cosmoDC2/cosmoDC2_v1.1.4_rs_scatter_query_tree_double/",
-        help="Destination (with protocol, e.g. gsiftp://) on GridPP system")
+    parser.add_argument("-i", "--input", metavar='<in_file>',
+        default="transferred.txt",
+        help="File containing list of transferred files")
 
     parser.add_argument("-e", "--se", default="UKI-LT2-IC-HEP-disk",
         metavar='<storage-element>', help="Storage element to use on Dirac")
@@ -52,23 +46,22 @@ def register(fc, filelist, se, lfnpath):
         if not lfnpath.endswith("/"):
             lfnpath = lfnpath+"/"
 
-    for file in filelist:
+    for line in filelist:
+        file, size, chksum = line.split()
         _, fname = os.path.split(file)
         lfn = lfnpath+fname
         if not lfn_exists(fc, lfn):
-            info = gf.stat(file)
-            chksum = gf.checksum(file, "adler32")
 
             infoDict = {}
             infoDict['PFN'] = file
-            infoDict['Size'] = int(info.st_size)
+            infoDict['Size'] = int(size)
             infoDict['SE'] = se
             infoDict['GUID'] = str(uuid.uuid4())
             infoDict['Checksum'] = chksum
 
             fileDict = {}
             fileDict[lfn] = infoDict
-
+            print("Adding {} to DIRAC file catalogue".format(lfn))
             result = fc.addFile(fileDict)
             if not result["OK"]:
                 raise Exception(result)
@@ -92,29 +85,30 @@ def lfn_exists(fc, lfn):
         raise Exception(result)
 
 
-def main():
-    # args = arguments()
-
+def main(args):
     # Strip arguments so command below doesn't throw error
     # DIRAC does not work otherwise
     sys.argv = [sys.argv[0]] 
     from DIRAC.Core.Base import Script
     Script.parseCommandLine( ignoreErrors = True )
 
-    if not args.dest.endswith("/") or not args.lfnpath.endswith("/"):
-        raise Exception("Destination and/or LFN Path must be a directory "+
+    if not args.lfnpath.endswith("/"):
+        raise Exception("LFN Path must be a directory "+
         "ending with a '/'")
 
     # # dirac = Dirac()
-    fcat = FileCatalog()
+    fcat = FileCatalogClient()
+    fcat.exists("/lsst") # Bug where first use of FileCatalogClient fails, but
+                         # subsequent uses are fine, so run throwaway command.
 
-    ### TODO - load file list
+    with open(args.input, "r") as infile:
+        files = infile.readlines()
 
-    register(fcat, files, args.se, args.lfnpath)
+        register(fcat, files, args.se, args.lfnpath)
 
 
 if __name__ == "__main__":
 
-    args = parse_command_line()
-    main()
+    arguments = parse_command_line()
+    main(arguments)
 
