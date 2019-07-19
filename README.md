@@ -68,9 +68,12 @@ through GFAL (takes significant amount of time when having to check many files)
 python register.py -i <track-file> -l <LFN-path> -e <storage-element>
 ```
 
+Again, this should (in theory) work for files already registered, but extensive 
+testing is still ongoing.
 
+<!---
 
-~~## Environment setup
+## Environment setup
 
 When working within a CernVM, the following commands are required:
 
@@ -117,6 +120,7 @@ should point to a GridPP folder/file, that currently exists.
 
 If the `transfer` and `register` flags are the same, both stages are executed. 
 The output from the `transfer` stage mode becomes the input for the `register`
-stage.~~
+stage.-->
+
 
 
